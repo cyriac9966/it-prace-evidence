@@ -20,13 +20,23 @@ export function LoginForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      const data = (await res.json()) as { error?: string };
+      const ct = res.headers.get("content-type") ?? "";
+      let message: string | undefined;
+      if (ct.includes("application/json")) {
+        const data = (await res.json()) as { error?: string };
+        message = data.error;
+      } else if (!res.ok) {
+        setError(`Chyba serveru (${res.status}). Zkuste znovu nebo kontaktujte správce.`);
+        return;
+      }
       if (!res.ok) {
-        setError(data.error ?? "Přihlášení selhalo.");
+        setError(message ?? "Přihlášení selhalo.");
         return;
       }
       router.push("/dashboard");
       router.refresh();
+    } catch {
+      setError("Nelze se spojit se serverem. Zkontrolujte připojení.");
     } finally {
       setLoading(false);
     }

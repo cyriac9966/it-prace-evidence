@@ -57,10 +57,6 @@ export async function getSessionUser(): Promise<(User & { role: Role }) | null> 
 }
 
 export function sessionCookieOptions() {
-  const secret = process.env.AUTH_SECRET;
-  if (!secret || secret.length < 16) {
-    throw new Error("Nastavte AUTH_SECRET v .env (min. 16 znaků).");
-  }
   return {
     name: COOKIE,
     httpOnly: true as const,
