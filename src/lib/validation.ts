@@ -192,21 +192,43 @@ export const workEntryBodySchema = z
 
 export type WorkEntryBody = z.infer<typeof workEntryBodySchema>;
 
-export const createEmployeeSchema = z.object({
-  email: z
-    .string()
-    .trim()
-    .transform((s) => s.toLowerCase())
-    .pipe(z.string().email("Neplatný e-mail.")),
-  name: z
-    .string()
-    .trim()
-    .min(2, "Jméno musí mít alespoň 2 znaky.")
-    .max(120),
-  password: z
-    .string()
-    .min(8, "Heslo musí mít alespoň 8 znaků.")
-    .max(200),
-});
+export const createEmployeeSchema = z
+  .object({
+    email: z
+      .string()
+      .trim()
+      .transform((s) => s.toLowerCase())
+      .pipe(z.string().email("Neplatný e-mail.")),
+    username: z.string().trim(),
+    name: z
+      .string()
+      .trim()
+      .min(2, "Jméno musí mít alespoň 2 znaky.")
+      .max(120),
+    password: z
+      .string()
+      .min(8, "Heslo musí mít alespoň 8 znaků.")
+      .max(200),
+  })
+  .superRefine((data, ctx) => {
+    const u = data.username.trim();
+    if (u.length === 0) return;
+    const lower = u.toLowerCase();
+    if (!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(lower)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Uživatelské jméno: 3–32 znaků, malá písmena, číslice, tečka, podtržítko nebo pomlčka.",
+        path: ["username"],
+      });
+    }
+  })
+  .transform((data) => ({
+    email: data.email,
+    name: data.name.trim(),
+    password: data.password,
+    username:
+      data.username.trim().length === 0 ? undefined : data.username.trim().toLowerCase(),
+  }));
 
 export type CreateEmployeeBody = z.infer<typeof createEmployeeSchema>;

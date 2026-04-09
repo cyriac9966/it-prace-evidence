@@ -173,9 +173,13 @@ export function describeAuditHumanReadable(
     case "CREATE_USER": {
       if (after && typeof after.email === "string") {
         const name = typeof after.name === "string" ? after.name : "";
+        const un =
+          after.username && typeof after.username === "string"
+            ? ` · přihlášení také „${after.username}“`
+            : "";
         return {
           headline: `Nový účet zaměstnance`,
-          changes: [`${name || after.email} · ${after.email}`],
+          changes: [`${name || after.email} · ${after.email}${un}`],
         };
       }
       return { headline: "Nový účet", changes: [] };

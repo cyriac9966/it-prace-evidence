@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 export function LoginForm() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -18,7 +18,7 @@ export function LoginForm() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ login, password }),
       });
       const ct = res.headers.get("content-type") ?? "";
       let message: string | undefined;
@@ -58,15 +58,15 @@ export function LoginForm() {
         </p>
       )}
       <div>
-        <label htmlFor="email" className="mb-1 block text-sm text-[var(--muted)]">
-          E-mail
+        <label htmlFor="login" className="mb-1 block text-sm text-[var(--muted)]">
+          E-mail nebo uživatelské jméno
         </label>
         <input
-          id="email"
-          type="email"
+          id="login"
+          type="text"
           autoComplete="username"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          value={login}
+          onChange={(e) => setLogin(e.target.value)}
           className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-white outline-none focus:border-[var(--accent)]"
           required
         />

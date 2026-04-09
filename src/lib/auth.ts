@@ -4,6 +4,16 @@ import { cookies } from "next/headers";
 import type { Role, User } from "@prisma/client";
 import { prisma } from "./db";
 
+/** E-mail (s @) nebo uživatelské jméno (uložené malými písmeny). */
+export async function findUserByLogin(raw: string): Promise<User | null> {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (trimmed.includes("@")) {
+    return prisma.user.findUnique({ where: { email: trimmed.toLowerCase() } });
+  }
+  return prisma.user.findUnique({ where: { username: trimmed.toLowerCase() } });
+}
+
 const COOKIE = "it_session";
 const SESSION_DAYS = 14;
 

@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 import { writeAudit } from "@/lib/audit";
-import { createSession, sessionCookieOptions, verifyPassword } from "@/lib/auth";
+import {
+  createSession,
+  findUserByLogin,
+  sessionCookieOptions,
+  verifyPassword,
+} from "@/lib/auth";
 
 function clientIp(req: Request): string | null {
   const xf = req.headers.get("x-forwarded-for");
@@ -10,21 +14,29 @@ function clientIp(req: Request): string | null {
 }
 
 export async function POST(req: Request) {
-  let body: { email?: string; password?: string };
+  let body: { login?: string; email?: string; password?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Neplatný požadavek." }, { status: 400 });
   }
 
-  const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+  const loginRaw =
+    typeof body.login === "string"
+      ? body.login
+      : typeof body.email === "string"
+        ? body.email
+        : "";
   const password = typeof body.password === "string" ? body.password : "";
 
-  if (!email || !password) {
-    return NextResponse.json({ error: "Vyplňte e-mail a heslo." }, { status: 400 });
+  if (!loginRaw.trim() || !password) {
+    return NextResponse.json(
+      { error: "Vyplňte přihlašovací jméno nebo e-mail a heslo." },
+      { status: 400 },
+    );
   }
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await findUserByLogin(loginRaw);
   if (!user || !(await verifyPassword(password, user.passwordHash))) {
     return NextResponse.json({ error: "Neplatné přihlašovací údaje." }, { status: 401 });
   }

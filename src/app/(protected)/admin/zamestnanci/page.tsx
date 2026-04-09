@@ -18,6 +18,7 @@ export default async function ZamestnanciPage() {
     select: {
       id: true,
       email: true,
+      username: true,
       name: true,
       createdAt: true,
       _count: { select: { entries: true } },
@@ -47,6 +48,7 @@ export default async function ZamestnanciPage() {
               <tr>
                 <th className="px-4 py-3 font-medium">Jméno</th>
                 <th className="px-4 py-3 font-medium">E-mail</th>
+                <th className="px-4 py-3 font-medium">Přihlašovací jméno</th>
                 <th className="px-4 py-3 font-medium">Záznamy</th>
                 <th className="px-4 py-3 font-medium">Účet od</th>
               </tr>
@@ -54,7 +56,7 @@ export default async function ZamestnanciPage() {
             <tbody>
               {employees.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-[var(--muted)]">
+                  <td colSpan={5} className="px-4 py-8 text-center text-[var(--muted)]">
                     Zatím žádní zaměstnanci. Použijte formulář výše.
                   </td>
                 </tr>
@@ -63,6 +65,9 @@ export default async function ZamestnanciPage() {
                 <tr key={e.id} className="border-b border-[var(--border)]/60">
                   <td className="px-4 py-3 font-medium">{e.name}</td>
                   <td className="px-4 py-3 text-[var(--muted)]">{e.email}</td>
+                  <td className="px-4 py-3 font-mono text-sm text-[var(--muted)]">
+                    {e.username ?? "—"}
+                  </td>
                   <td className="px-4 py-3">{e._count.entries}</td>
                   <td className="px-4 py-3 text-[var(--muted)]">
                     {e.createdAt.toLocaleDateString("cs-CZ")}

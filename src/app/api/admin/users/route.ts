@@ -24,6 +24,7 @@ export async function GET() {
     select: {
       id: true,
       email: true,
+      username: true,
       name: true,
       createdAt: true,
       _count: { select: { entries: true } },
@@ -34,6 +35,7 @@ export async function GET() {
     users: employees.map((u) => ({
       id: u.id,
       email: u.email,
+      username: u.username,
       name: u.name,
       createdAt: u.createdAt.toISOString(),
       entryCount: u._count.entries,
@@ -62,7 +64,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { email, name, password } = parsed.data;
+  const { email, name, password, username } = parsed.data;
   const meta = clientMeta(req);
 
   const existing = await prisma.user.findUnique({ where: { email } });
@@ -70,15 +72,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Uživatel s tímto e-mailem už existuje." }, { status: 409 });
   }
 
+  if (username) {
+    const taken = await prisma.user.findUnique({ where: { username } });
+    if (taken) {
+      return NextResponse.json(
+        { error: "Toto uživatelské jméno je už obsazené." },
+        { status: 409 },
+      );
+    }
+  }
+
   const passwordHash = await hashPassword(password);
   const created = await prisma.user.create({
     data: {
       email,
+      username: username ?? null,
       name,
       passwordHash,
       role: Role.USER,
     },
-    select: { id: true, email: true, name: true, createdAt: true },
+    select: { id: true, email: true, username: true, name: true, createdAt: true },
   });
 
   await writeAudit({
@@ -86,7 +99,11 @@ export async function POST(req: Request) {
     action: "CREATE_USER",
     entityType: "User",
     entityId: created.id,
-    payloadAfter: { email: created.email, name: created.name },
+    payloadAfter: {
+      email: created.email,
+      name: created.name,
+      ...(created.username ? { username: created.username } : {}),
+    },
     ...meta,
   });
 
@@ -95,6 +112,7 @@ export async function POST(req: Request) {
       user: {
         id: created.id,
         email: created.email,
+        username: created.username,
         name: created.name,
         createdAt: created.createdAt.toISOString(),
       },

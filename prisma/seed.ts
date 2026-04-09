@@ -12,9 +12,15 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: "admin@local.dev" },
-    update: { passwordHash: adminHash, name: "Administrátor", role: Role.ADMIN },
+    update: {
+      passwordHash: adminHash,
+      name: "Administrátor",
+      role: Role.ADMIN,
+      username: "admin",
+    },
     create: {
       email: "admin@local.dev",
+      username: "admin",
       passwordHash: adminHash,
       name: "Administrátor",
       role: Role.ADMIN,
@@ -23,9 +29,10 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: "user@local.dev" },
-    update: { passwordHash: userHash, name: "Technik" },
+    update: { passwordHash: userHash, name: "Technik", username: "technik" },
     create: {
       email: "user@local.dev",
+      username: "technik",
       passwordHash: userHash,
       name: "Technik",
       role: Role.USER,
@@ -33,8 +40,8 @@ async function main() {
   });
 
   console.log("Seed dokončen.");
-  console.log("  Admin: admin@local.dev / " + adminPass);
-  console.log("  Uživatel: user@local.dev / " + userPass);
+  console.log("  Admin: e-mail admin@local.dev nebo jméno admin · heslo " + adminPass);
+  console.log("  Uživatel: e-mail user@local.dev nebo jméno technik · heslo " + userPass);
 }
 
 main()

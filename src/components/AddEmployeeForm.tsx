@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 export function AddEmployeeForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -23,20 +24,25 @@ export function AddEmployeeForm() {
       const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name, password }),
+        body: JSON.stringify({ email, username, name, password }),
       });
       const data = (await res.json()) as {
         error?: string;
         fields?: Record<string, string[] | undefined>;
-        user?: { email: string };
+        user?: { email: string; username: string | null };
       };
       if (!res.ok) {
         if (data.fields) setFieldErrors(data.fields);
         setError(data.error ?? "Vytvoření účtu selhalo.");
         return;
       }
-      setSuccess(`Účet ${data.user?.email ?? email} byl vytvořen. Předejte zaměstnanci přihlašovací údaje.`);
+      const hint =
+        data.user?.username != null && data.user.username !== ""
+          ? `${data.user.email} nebo jméno „${data.user.username}“`
+          : data.user?.email ?? email;
+      setSuccess(`Účet byl vytvořen (${hint}). Předejte zaměstnanci přihlašovací údaje.`);
       setEmail("");
+      setUsername("");
       setName("");
       setPassword("");
       router.refresh();
@@ -73,7 +79,7 @@ export function AddEmployeeForm() {
       )}
       <div>
         <label htmlFor="emp-email" className="mb-1 block text-sm text-[var(--muted)]">
-          E-mail (přihlašovací jméno)
+          E-mail
         </label>
         <input
           id="emp-email"
@@ -84,6 +90,24 @@ export function AddEmployeeForm() {
           required
         />
         {hint("email")}
+      </div>
+      <div>
+        <label htmlFor="emp-username" className="mb-1 block text-sm text-[var(--muted)]">
+          Uživatelské jméno <span className="text-[var(--muted)]">(volitelné)</span>
+        </label>
+        <input
+          id="emp-username"
+          type="text"
+          autoComplete="off"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="např. jan.novak"
+          className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-white outline-none focus:border-[var(--accent)]"
+        />
+        <p className="mt-1 text-xs text-[var(--muted)]">
+          Krátké jméno pro přihlášení bez psaní e-mailu. 3–32 znaků: a–z, číslice, . _ -
+        </p>
+        {hint("username")}
       </div>
       <div>
         <label htmlFor="emp-name" className="mb-1 block text-sm text-[var(--muted)]">
