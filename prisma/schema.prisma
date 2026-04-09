@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum AuditAction {
+  CREATE_ENTRY
+  UPDATE_ENTRY
+  DELETE_ENTRY
+  CREATE_USER
+  LOGIN
+  LOGOUT
+}
+
+enum ActivityType {
+  TECHNICAL
+  COMMUNICATION
+  ANALYSIS
+  SUPPORT
+  IMPLEMENTATION
+  TESTING
+  ADMINISTRATION
+}
+
+enum ResultStatus {
+  RESOLVED
+  UNRESOLVED
+  PENDING
+}
+
+model User {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  passwordHash String
+  name         String
+  role         Role        @default(USER)
+  createdAt    DateTime    @default(now())
+  entries      WorkEntry[]
+  sessions     Session[]
+  auditLogs    AuditLog[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model WorkEntry {
+  id                   String         @id @default(cuid())
+  userId               String
+  user                 User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title                String
+  workDate             DateTime
+  activityType         ActivityType   @default(TECHNICAL)
+  reporter             String         @default("")
+  whereResolved        String         @default("")
+  resultStatus         ResultStatus   @default(PENDING)
+  communicationSummary String?
+  communicationOutcome String?
+  analysisSummary      String?
+  analysisConclusion   String?
+  testingScope         String?
+  testingOutcome       String?
+  adminDescription     String?
+  evidenceUrl          String?
+  evidenceFileName     String?
+  evidenceStoredPath   String?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  steps                WorkStep[]
+}
+
+model WorkStep {
+  id          String    @id @default(cuid())
+  entryId     String
+  entry       WorkEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  sortOrder   Int
+  description String
+  minutes     Int
+  createdAt   DateTime  @default(now())
+}
+
+model AuditLog {
+  id            String      @id @default(cuid())
+  actorId       String
+  actor         User        @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  action        AuditAction
+  entityType    String
+  entityId      String?
+  payloadBefore String?
+  payloadAfter  String?
+  ip            String?
+  userAgent     String?
+  createdAt     DateTime    @default(now())
+}
