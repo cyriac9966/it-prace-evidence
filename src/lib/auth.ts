@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
+import { cache } from "react";
 import type { Role, User } from "@prisma/client";
 import { prisma } from "./db";
 
@@ -52,19 +53,27 @@ export async function deleteSessionByCookieValue(rawToken: string | undefined) {
   await prisma.session.deleteMany({ where: { token: tokenHash } });
 }
 
-export async function getSessionUser(): Promise<(User & { role: Role }) | null> {
+/**
+ * Jedna databáze na request: layout i stránka volají getSessionUser() —
+ * React cache() sloučí volání a zkrátí odezvu chráněných route.
+ */
+export const getSessionUser = cache(async (): Promise<(User & { role: Role }) | null> => {
   const store = await cookies();
   const raw = store.get(COOKIE)?.value;
   if (!raw) return null;
 
   const tokenHash = hashToken(raw);
-  const session = await prisma.session.findFirst({
-    where: { token: tokenHash, expiresAt: { gt: new Date() } },
+  const session = await prisma.session.findUnique({
+    where: { token: tokenHash },
     include: { user: true },
   });
 
-  return session?.user ?? null;
-}
+  if (!session || session.expiresAt.getTime() <= Date.now()) {
+    return null;
+  }
+
+  return session.user;
+});
 
 export function sessionCookieOptions() {
   return {
