@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { writeAudit } from "@/lib/audit";
 import {
   createSession,
@@ -44,15 +44,20 @@ export async function POST(req: Request) {
   const token = await createSession(user.id);
   const opts = sessionCookieOptions();
 
-  await writeAudit({
+  const auditPayload = {
     actorId: user.id,
-    action: "LOGIN",
+    action: "LOGIN" as const,
     entityType: "User",
     entityId: user.id,
     payloadAfter: { email: user.email },
     ip: clientIp(req),
     userAgent: req.headers.get("user-agent"),
-  });
+  };
+  after(() =>
+    writeAudit(auditPayload).catch((err) => {
+      console.error("[auth/login] audit zápis selhal", err);
+    }),
+  );
 
   const res = NextResponse.json({
     user: { id: user.id, email: user.email, name: user.name, role: user.role },

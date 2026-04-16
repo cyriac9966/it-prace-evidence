@@ -2,28 +2,47 @@ import { createHash, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { cache } from "react";
-import type { Role, User } from "@prisma/client";
+import type { Prisma, Role, User } from "@prisma/client";
 import { prisma } from "./db";
 
+const loginUserSelect = {
+  id: true,
+  email: true,
+  username: true,
+  name: true,
+  role: true,
+  passwordHash: true,
+} satisfies Prisma.UserSelect;
+
+export type UserForLogin = Prisma.UserGetPayload<{ select: typeof loginUserSelect }>;
+
 /** E-mail (s @) nebo uživatelské jméno (uložené malými písmeny). */
-export async function findUserByLogin(raw: string): Promise<User | null> {
+export async function findUserByLogin(raw: string): Promise<UserForLogin | null> {
   const trimmed = raw.trim();
   if (!trimmed) return null;
   if (trimmed.includes("@")) {
-    return prisma.user.findUnique({ where: { email: trimmed.toLowerCase() } });
+    return prisma.user.findUnique({
+      where: { email: trimmed.toLowerCase() },
+      select: loginUserSelect,
+    });
   }
-  return prisma.user.findUnique({ where: { username: trimmed.toLowerCase() } });
+  return prisma.user.findUnique({
+    where: { username: trimmed.toLowerCase() },
+    select: loginUserSelect,
+  });
 }
 
 const COOKIE = "it_session";
 const SESSION_DAYS = 14;
+/** Nová hesla (admin → zaměstnanec). Uložené hash v DB si drží vlastní náklad – tím se neovlivní stávající účty. */
+const BCRYPT_ROUNDS_NEW = 10;
 
 function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
 export async function hashPassword(plain: string): Promise<string> {
-  return bcrypt.hash(plain, 12);
+  return bcrypt.hash(plain, BCRYPT_ROUNDS_NEW);
 }
 
 export async function verifyPassword(plain: string, hash: string): Promise<boolean> {
